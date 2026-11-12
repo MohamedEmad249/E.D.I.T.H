@@ -9,6 +9,31 @@ Ask questions about your own PDFs. Everything runs on your machine, on CPU:
 Answers come from your documents when they match; otherwise the bot answers from general
 knowledge and says so ("This isn't covered in your documents, but: …").
 
+## Features
+
+- Ask questions about uploaded PDFs and see source citations with document names and page numbers.
+- Upload, select, and remove PDFs from the sidebar. The included `data/` PDFs can also be indexed locally.
+- Keep multiple conversations, switch between them, and rename or delete saved chats.
+- Use the dark midnight navy and cyan theme or switch to the cool-toned light theme. Dark mode includes the supplied HUD workspace background; light mode hides it.
+- Run the chat model and document search locally. The app does not require a hosted AI API.
+
+See [UI-CHANGES.md](UI-CHANGES.md) for the visual design details.
+
+## Project layout
+
+| Path | Purpose |
+|---|---|
+| `app.py` | FastAPI backend, chat endpoints, document management, and saved sessions |
+| `ingest.py` | Index PDFs from `data/` into the local ChromaDB collection |
+| `data/` | Sample PDF documents included with the project |
+| `models/` | Model configuration/reference scripts |
+| `frontend/` | React + Vite user interface |
+| `frontend/public/images/edith-hud-bg.jpg` | HUD background used by the dark chat workspace |
+| `.env.example` | Optional backend configuration defaults |
+| `frontend/.env.example` | Optional frontend configuration defaults |
+
+The ChromaDB index, chat history, and local `.env` files are excluded from Git. PDFs in `data/` are tracked project files; PDFs uploaded through the UI are also saved in that folder. The ChromaDB index is created locally when PDFs are ingested or uploaded.
+
 ## One-time setup
 
 1. Install **Python 3.13** (3.14 lacks wheels for some dependencies) and **Node.js**.
