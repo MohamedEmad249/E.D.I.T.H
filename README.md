@@ -17,8 +17,6 @@ knowledge and says so ("This isn't covered in your documents, but: …").
 - Use the dark midnight navy and cyan theme or switch to the cool-toned light theme. Dark mode includes the supplied HUD workspace background; light mode hides it.
 - Run the chat model and document search locally. The app does not require a hosted AI API.
 
-See [UI-CHANGES.md](UI-CHANGES.md) for the visual design details.
-
 ## Project layout
 
 | Path | Purpose |
