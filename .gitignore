@@ -1,0 +1,17 @@
+# Secrets / local config
+.env
+.claude/settings.local.json
+
+# Generated data
+chroma_db/
+chat_sessions.json
+chat_sessions.json.tmp
+data/*.uploading
+
+# Python
+__pycache__/
+*.pyc
+
+# Node (frontend has its own .gitignore too)
+node_modules/
+dist/

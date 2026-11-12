@@ -1,0 +1,93 @@
+* , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Tokens mirror the Figma file "MoChat UI Redesign" (collections Color / Light and Color / Dark). */
+
+/* ── Light theme ───────────────────────────────────────────────────────── */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --bg:            #F4F8FC;
+  --surface:       #FFFFFF;
+  --sidebar:       #EAF1F8;
+  --border:        #D8E3EF;
+  --border-strong: #B8C9DC;
+  --text:          #102033;
+  --muted:         #53677F;
+  --dim:           #7D8FA4;
+  --brand:         #00AFC4;
+  --brand-soft:    #D9F8FC;
+  --ink:           #00CFE8;
+  --on-ink:        #07131E;
+  --accent:        #FF5252;
+  --accent-hover:  #E64141;
+  --on-accent:     #07131E;
+  --hover:         rgba(16, 32, 51, 0.05);
+  --shadow:        0 8px 28px rgba(24, 48, 75, 0.09);
+  --focus-ring:    0 0 0 3px rgba(0, 175, 196, 0.18);
+
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ── Dark theme (default) ───────────────────────────────────────────────── */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg:            #0A0F1C;
+  --surface:       #131C31;
+  --sidebar:       #070B14;
+  --border:        #202B42;
+  --border-strong: #34425D;
+  --text:          #F1F5F9;
+  --muted:         #94A3B8;
+  --dim:           #71809A;
+  --brand:         #00E5FF;
+  --brand-soft:    rgba(0, 229, 255, 0.14);
+  --ink:           #00E5FF;
+  --on-ink:        #070B14;
+  --accent:        #FF5252;
+  --accent-hover:  #FF7070;
+  --on-accent:     #070B14;
+  --hover:         rgba(148, 163, 184, 0.08);
+  --shadow:        0 8px 28px rgba(0, 0, 0, 0.5);
+  --focus-ring:    0 0 0 3px rgba(0, 229, 255, 0.2);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+button, textarea, input {
+  font-family: inherit;
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+::selection {
+  background: var(--brand-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,24 @@
+# Tested with Python 3.13 (Windows). Python 3.14 does not have wheels for all of these yet.
+# Install:  py -3.13 -m pip install -r requirements.txt
+
+# Core API
+fastapi==0.133.1
+uvicorn[standard]==0.41.0
+python-multipart==0.0.33     # PDF uploads
+python-dotenv==1.2.2
+pydantic==2.14.3
+httpx==0.28.1                # talks to Ollama
+
+# RAG / vector store
+langchain-community==0.4.2
+langchain-chroma==1.1.0
+langchain-huggingface==1.2.3
+langchain-text-splitters==1.1.3
+chromadb==1.5.9
+pypdf==7.0.1
+
+# Embeddings (the small BGE model; pulls in torch/transformers)
+sentence-transformers==6.3.0
+
+# The chat model is NOT a Python dependency: it runs in Ollama.
+#   Install Ollama from https://ollama.com, then:  ollama pull qwen2.5:1.5b-instruct
