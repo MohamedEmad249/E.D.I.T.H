@@ -1,6 +1,6 @@
 # E.D.I.T.H — a local study chatbot for your PDFs
 
-## Every Document Indexed To Help
+## Every.Document.Indexed.To.Help
 
 Ask questions about your own PDFs. Everything runs on your machine, on CPU:
 
