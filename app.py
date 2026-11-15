@@ -37,7 +37,7 @@ load_dotenv()
 # Override with OLLAMA_MODEL / OLLAMA_URL in .env (LLM_MODEL is no longer used).
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b-instruct")
-MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "384"))
+MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "-1"))  # Ollama: -1 = no fixed output-token limit
 NUM_CTX = int(os.getenv("NUM_CTX", "4096"))   # prompt + answer must fit in here
 
 # CPU generation is slow and parallel requests just slow each other down,
@@ -264,7 +264,8 @@ def build_messages(question: str, context: str | None, history: list[dict]) -> l
 
 
 # ── Ollama calls ─────────────────────────────────────────────────────────────
-def _ollama_payload(messages: list[dict], max_new_tokens: int, stream: bool) -> dict:
+def _ollama_payload(messages: list[dict], max_new_tokens: int, stream: bool,
+                    temperature: float = 0) -> dict:
     return {
         "model": OLLAMA_MODEL,
         "messages": messages,
@@ -273,14 +274,15 @@ def _ollama_payload(messages: list[dict], max_new_tokens: int, stream: bool) -> 
         "options": {
             "num_ctx": NUM_CTX,
             "num_predict": max_new_tokens,
-            "temperature": 0,  # greedy: most faithful for RAG
+            "temperature": temperature,
         },
     }
 
 
 def stream_answer(messages: list[dict], max_new_tokens: int = MAX_NEW_TOKENS,
                   info: Optional[dict] = None,
-                  stop: Optional[StopHandle] = None) -> Iterator[str]:
+                  stop: Optional[StopHandle] = None,
+                  temperature: float = 0) -> Iterator[str]:
     """Yield the answer piece by piece as Ollama generates it.
     If `info` is given, info["truncated"] is set when the token limit cut the answer off.
     If `stop` is given, stop.stop() ends the generation early (no error raised)."""
@@ -290,7 +292,7 @@ def stream_answer(messages: list[dict], max_new_tokens: int = MAX_NEW_TOKENS,
         try:
             with httpx.stream(
                 "POST", f"{OLLAMA_URL}/api/chat",
-                json=_ollama_payload(messages, max_new_tokens, True),
+                json=_ollama_payload(messages, max_new_tokens, True, temperature),
                 timeout=httpx.Timeout(900, connect=5),
             ) as r:
                 if stop:
@@ -421,11 +423,13 @@ def summary_stream(jobs: list[tuple[str, list[str]]],
 
 
 def answer_stream(messages: list[dict], prefix: str = "",
-                  stop: Optional[StopHandle] = None) -> Iterator[str]:
+                  stop: Optional[StopHandle] = None,
+                  max_new_tokens: int = MAX_NEW_TOKENS,
+                  temperature: float = 0) -> Iterator[str]:
     if prefix:
         yield prefix
     info: dict = {}
-    yield from stream_answer(messages, MAX_NEW_TOKENS, info, stop)
+    yield from stream_answer(messages, max_new_tokens, info, stop, temperature)
     if info.get("truncated"):
         yield "\n\n*(The answer was cut off — ask me to continue.)*"
 
@@ -514,8 +518,13 @@ def prepare(req: ChatRequest) -> Prepared:
         prefix = NO_DOCS_SELECTED_PREFIX if only is not None and not only else NOT_COVERED_PREFIX
 
     messages = build_messages(req.question, context, history)
+    quiz_request = is_quiz_request(req.question)
+    if quiz_request:
+        messages = add_quiz_instructions(messages, req.question, history)
+    temperature = 0.55 if quiz_request else 0
     return Prepared(session_id, req.question, sources, route,
-                    lambda stop=None: answer_stream(messages, prefix, stop))
+                    lambda stop=None: answer_stream(
+                        messages, prefix, stop, MAX_NEW_TOKENS, temperature))
 
 
 def remember(session_id: str, question: str, answer: str, sources: Optional[list] = None) -> int:
@@ -543,6 +552,45 @@ SUMMARY_TRIGGER_PHRASES = (
 def is_summary_request(question: str) -> bool:
     q = question.strip().lower()
     return any(phrase in q for phrase in SUMMARY_TRIGGER_PHRASES)
+
+
+def requested_question_count(question: str) -> int | None:
+    """Extract an explicit quiz/question count, including shorthand like '20 Q'."""
+    match = re.search(r"\b(\d{1,2})\s*[- ]?\s*(?:questions?|qs?)\b", question, re.I)
+    if not match:
+        return None
+    return max(1, min(int(match.group(1)), 50))
+
+
+def is_quiz_request(question: str) -> bool:
+    q = question.lower()
+    return requested_question_count(question) is not None or any(
+        term in q for term in ("quiz", "mcq", "multiple choice", "practice questions", "test questions")
+    )
+
+
+def add_quiz_instructions(messages: list[dict], question: str, history: list[dict]) -> list[dict]:
+    count = requested_question_count(question)
+    target = f"exactly {count}" if count else "a useful set of"
+    previous_quizzes = [
+        turn["content"] for turn in history
+        if turn["role"] == "assistant" and re.search(r"(?m)^\s*(?:\d+[.)]|Q\d+[:.)])\s", turn["content"])
+    ]
+    avoid = ""
+    if previous_quizzes:
+        prior = previous_quizzes[-1][:5000]
+        avoid = f"\nDo not repeat questions from this earlier quiz in the conversation:\n{prior}\n"
+    instruction = (
+        f"QUIZ TASK: Create {target} distinct questions requested by the student. "
+        "Follow the requested format; if they ask for MCQs, give four answer choices "
+        "(A-D) per question and put a compact answer key at the end. Number every "
+        "question. Cover different concepts from the provided study context and do "
+        "not stop after a small sample. Do not include explanations unless requested."
+        f"{avoid}"
+    )
+    updated = [*messages]
+    updated[0] = {**updated[0], "content": updated[0]["content"] + "\n\n" + instruction}
+    return updated
 
 
 @app.post("/chat", response_model=ChatResponse)
